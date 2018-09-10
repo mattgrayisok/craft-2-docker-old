@@ -1,0 +1,48 @@
+{% import '_macros/_cache' as m_cache %}
+{% import '_macros/_cdn' as m_cdn %}
+{% import '_macros/_other' as m_other %}
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0" />
+	<link rel="home" href="{{ siteUrl }}" />
+
+	{% include '_partials/_tag-manager-1.html' with {'code':'GTM-XXXXXXX'} only %}
+
+	{% include '_partials/_meta-icons.html' %}
+
+	{% hook 'seomaticRender' %}
+
+	<link rel="stylesheet" type="text/css" href="{{ m_cdn.cdnify(m_cache.cachebust('/assets/css/styles.css')) }}">
+
+</head>
+
+<body class="page-{{ page_name is defined ? page_name : 'default' }}">
+
+	{% include '_partials/_tag-manager-2.html' with {'code':'GTM-XXXXXXX'} only %}
+
+	<div id="container" class="container">
+		{% include '_header.html' %}
+
+    <main class="content" id="content" role="main">
+			{% block content %}
+				<!-- Layout loaded with no content block set -->
+			{% endblock %}
+		</main>
+
+		{% include '_footer.html' %}
+
+	</div>
+
+	<script src="{{ m_cdn.cdnify(m_cache.cachebust('/assets/js/scripts.js')) }}"></script>
+
+	{% include '_partials/_other-tracking.html' %}
+
+	{% block pageTracking %}
+		<!-- No custom page tracking applied -->
+	{% endblock %}
+
+</body>
+</html>

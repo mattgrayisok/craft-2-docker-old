@@ -1,0 +1,9 @@
+{% extends (craft.request.isAjax ? "_ajax" : "_layout")  %}
+{% set title = "404" %}
+
+{% block content %}
+	<div class="page-404">
+		<h2>Page not found</h2>
+		<a href="/">Go home</a>
+	</div>
+{% endblock %}

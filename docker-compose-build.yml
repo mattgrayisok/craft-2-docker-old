@@ -1,0 +1,8 @@
+version: '2'
+services:
+  buildchain:
+      build:
+        context: .
+        dockerfile: ./.docker-config/build/Dockerfile
+      volumes:
+          - ./src:/project/src

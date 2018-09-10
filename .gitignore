@@ -1,0 +1,8 @@
+.DS_Store
+._*
+src/public/assets/css/maps
+src/public/assets/css/styles.css
+src/public/assets/js/scripts.js
+src/public/assets/images
+src/public/assets/sprites
+src/config/license.key

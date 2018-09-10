@@ -1,0 +1,78 @@
+version: '2'
+services:
+  nginx:
+      build:
+        context: .
+        dockerfile: ./.docker-config/nginx/Dockerfile
+      ports:
+          - 80:80
+      links:
+          - php
+      volumes:
+          - ./src/public:/var/www/html/public
+
+  php:
+      build:
+        context: .
+        dockerfile: ./.docker-config/php/Dockerfile
+      expose:
+          - 9000
+      links:
+          - database
+      volumes:
+          - ./src/public:/var/www/html/public
+          - ./src/templates:/var/www/html/craft/templates
+          - ./src/plugins:/var/www/html/craft/plugins
+          - ./src/config:/var/www/html/craft/config
+          - storage-data:/var/www/craft/storage
+      environment:
+        DB_DRIVER: mysql
+        DB_SERVER: database
+        DB_USER: project
+        DB_PASSWORD: project
+        DB_DATABASE: project
+        DB_SCHEMA: public
+        DB_TABLE_PREFIX: craft_
+        SITE_URL: http://localhost
+        DEV_MODE: 1
+        CDN_PREFIX: http://localhost
+
+  database:
+      build:
+        context: .
+        dockerfile: ./.docker-config/database/Dockerfile
+      volumes:
+          - db-data:/var/lib/database
+      ports:
+          - 3306:3306
+      environment:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: project
+          MYSQL_USER: project
+          MYSQL_PASSWORD: project
+
+  phpmyadmin:
+      image: phpmyadmin/phpmyadmin
+      ports:
+          - 8085:80
+      links:
+          - database
+      environment:
+          PMA_HOST: database
+
+  buildchain:
+      build:
+        context: .
+        dockerfile: ./.docker-config/build/Dockerfile
+      ports:
+          - 3000:3000
+          - 3001:3001
+      links:
+          - nginx
+      volumes:
+          - ./src:/project/src
+      command: [./node_modules/.bin/gulp, watch]
+
+volumes:
+  storage-data:
+  db-data:

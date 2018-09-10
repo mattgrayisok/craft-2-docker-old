@@ -1,0 +1,16 @@
+
+
+{%- macro is_active(segment) -%}
+  {%- if craft.request.firstSegment == segment -%}
+    is-selected
+  {%- endif -%}
+{%- endmacro -%}
+
+{% macro insert_svg(name, title, ariaHidden) %}
+{% import '_macros/_cache' as m_cache %}
+{% import '_macros/_cdn' as m_cdn %}
+<svg class="svg-icon svg-icon-{{ name }}" {% if ariaHidden %}aria-hidden="true"{% endif %}>
+  {% if (title|length > 0) %}<title>{{ title }}</title>{% endif %}
+  <use xlink:href="{{ m_cdn.cdnify(m_cache.cachebust('/assets/sprites/svg-sprite.svg')) }}#{{ name }}"></use>
+</svg>
+{% endmacro %}

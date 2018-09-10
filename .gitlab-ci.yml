@@ -1,0 +1,58 @@
+image: docker:17.07.0
+
+services:
+  - docker:17.07.0-dind
+
+stages:
+- build
+- release
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: tcp://docker:2375
+  PHP_CONTAINER_TEST_IMAGE: myprivateregistry.co.uk/namespace/$CI_PROJECT_NAME/php:$CI_BUILD_REF_NAME
+  PHP_CONTAINER_RELEASE_IMAGE: myprivateregistry.co.uk/namespace/$CI_PROJECT_NAME/php:latest
+  NGINX_CONTAINER_TEST_IMAGE: myprivateregistry.co.uk/namespace/$CI_PROJECT_NAME/nginx:$CI_BUILD_REF_NAME
+  NGINX_CONTAINER_RELEASE_IMAGE: myprivateregistry.co.uk/namespace/$CI_PROJECT_NAME/nginx:latest
+  DB_CONTAINER_TEST_IMAGE: myprivateregistry.co.uk/namespace/$CI_PROJECT_NAME/db:$CI_BUILD_REF_NAME
+  DB_CONTAINER_RELEASE_IMAGE: myprivateregistry.co.uk/namespace/$CI_PROJECT_NAME/db:latest
+
+before_script:
+  - export COMPOSE_HTTP_TIMEOUT=300
+  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN myprivateregistry.co.uk
+  - apk update
+  - apk upgrade
+  - apk add python python-dev py2-pip build-base curl gettext
+  - pip install docker-compose
+  - apk add openssh-client
+
+build:
+  stage: build
+  script:
+    - docker pull $PHP_CONTAINER_RELEASE_IMAGE || true
+    - docker pull $NGINX_CONTAINER_RELEASE_IMAGE  || true
+    - docker pull $DB_CONTAINER_RELEASE_IMAGE  || true
+    - echo "{% macro cachebust(path) %}{{ path }}?v="$(cat /dev/urandom | LC_CTYPE=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"{% endmacro %}" > src/templates/_macros/_cache.html
+    - echo $(cat /dev/urandom | LC_CTYPE=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1) > src/assetversion
+    - docker-compose -f docker-compose-build.yml up
+    - docker build -f containers/php/Dockerfile --pull --cache-from $PHP_CONTAINER_RELEASE_IMAGE -t $PHP_CONTAINER_TEST_IMAGE .
+    - docker push $PHP_CONTAINER_TEST_IMAGE
+    - docker build -f containers/nginx/Dockerfile --pull --cache-from $NGINX_CONTAINER_RELEASE_IMAGE -t $NGINX_CONTAINER_TEST_IMAGE .
+    - docker push $NGINX_CONTAINER_TEST_IMAGE
+    - docker build -f containers/database/Dockerfile --pull --cache-from $DB_CONTAINER_RELEASE_IMAGE -t $DB_CONTAINER_TEST_IMAGE .
+    - docker push $DB_CONTAINER_TEST_IMAGE
+
+release-image:
+  stage: release
+  script:
+    - docker pull $PHP_CONTAINER_TEST_IMAGE
+    - docker tag $PHP_CONTAINER_TEST_IMAGE $PHP_CONTAINER_RELEASE_IMAGE
+    - docker push $PHP_CONTAINER_RELEASE_IMAGE
+    - docker pull $NGINX_CONTAINER_TEST_IMAGE
+    - docker tag $NGINX_CONTAINER_TEST_IMAGE $NGINX_CONTAINER_RELEASE_IMAGE
+    - docker push $NGINX_CONTAINER_RELEASE_IMAGE
+    - docker pull $DB_CONTAINER_TEST_IMAGE
+    - docker tag $DB_CONTAINER_TEST_IMAGE $DB_CONTAINER_RELEASE_IMAGE
+    - docker push $DB_CONTAINER_RELEASE_IMAGE
+  only:
+    - master
